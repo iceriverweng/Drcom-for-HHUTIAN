@@ -381,7 +381,6 @@ if __name__ == "__main__":
 	get_randmac()
 	get_mac()
 	get_ip()
-	#get_conf()
 	main()
 
 
