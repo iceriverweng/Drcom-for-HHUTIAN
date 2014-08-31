@@ -26,11 +26,13 @@ EXCEPTION = False
 
 
 def get_ip():
-	global hexip
+	global hexip,host_ip
 	localip=socket.gethostbyname(socket.gethostname())
 	print "your local ip:"+localip
 	print "plz enter your local ip or use your own ip:."
-	hexip=socket.inet_aton(raw_input())
+	a=raw_input()
+	hexip=socket.inet_aton(a)
+	host_ip=a
 
 def get_mac():
 	global mac
@@ -44,7 +46,6 @@ def get_mac():
 def get_randmac():
 	mac = [ 0x00, 0x16, 0x3e,random.randint(0x00, 0x7f),random.randint(0x00, 0xff),random.randint(0x00, 0xff) ]
 	return ''.join(map(lambda x: "%02x" % x, mac))
-#
 	#print randomMAC()
 	
 def version():
@@ -381,6 +382,7 @@ if __name__ == "__main__":
 	get_randmac()
 	get_mac()
 	get_ip()
+	#get_conf()
 	main()
 
 
