@@ -14,12 +14,21 @@ class loginException (Exception):
   def __init__(self):
     pass
 	
-
-s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-s.bind(("0.0.0.0", 61440))
-
-s.settimeout(3)
-SALT = ''
+def try_socket():
+#sometimes cannot get the port
+	global s,salt
+	try:
+		s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		s.bind(("0.0.0.0", 61440))
+		s.settimeout(3)
+	except:
+		print "==============================="
+		print "Cannot get port,close&reopen it"
+		print "==============================="
+		raw_input()
+		sys.exit(0)
+	else:
+		SALT= ''
 
 UNLIMITED_RETRY = True
 EXCEPTION = False
@@ -36,12 +45,14 @@ def get_ip():
 
 def get_mac():
 	global mac
+
 	rmac=get_randmac()
 	print "randMAC:"+rmac
 	print "input your MAC like above or use your own mac:"
 	mac=long(raw_input(),16)
 	#print mac
 
+	#mac=0xaabbccddeeff
 	
 def get_randmac():
 	mac = [ 0x00, 0x16, 0x3e,random.randint(0x00, 0x7f),random.randint(0x00, 0xff),random.randint(0x00, 0xff) ]
@@ -52,7 +63,7 @@ def version():
 	print "=====================================================================" 
 	print "DrCOM Auth Router for 3.5+" 
 	print "powered by Ice and thx all authors before"
-	print "Version 0.3.3 with mac & ip en beta"
+	print "Version 0.3.6 with mac & ip en beta"
 	print "=====================================================================" 
 	
 
@@ -167,31 +178,40 @@ def keep_alive2(*args):
     print '[keep-alive2] recv3',data.encode('hex')
     tail = data[16:20]
     print "[keep-alive2] keep-alive2 loop was in daemon."
-    
+    print "Start relogin countdown"
     i = 3
     while True:
       try:
-        ran += random.randint(1,10)   
-        packet = keep_alive_package_builder(i,dump(ran),tail,1,False)
-        #print('DEBUG: keep_alive2,packet 4\n',packet.encode('hex'))
-        print '[keep_alive2] send',str(i),packet.encode('hex')
-        s.sendto(packet, (svr, 61440))
-        data, address = s.recvfrom(1024)
-        print '[keep_alive2] recv',data.encode('hex')
-        tail = data[16:20]
-        #print('DEBUG: keep_alive2,packet 4 return\n',data.encode('hex'))
+		ti=9
+		print "Start 180s time relogin"
+		while ti>0:
+			ti -=1
+			if ti==0:
+				print "relogin..."
+				loginpart()
+				break
+			print ti
+			ran += random.randint(1,10)   
+			packet = keep_alive_package_builder(i,dump(ran),tail,1,False)
+			#print('DEBUG: keep_alive2,packet 4\n',packet.encode('hex'))
+			print '[keep_alive2] send',str(i),packet.encode('hex')
+			s.sendto(packet, (svr, 61440))
+			data, address = s.recvfrom(1024)
+			print '[keep_alive2] recv',data.encode('hex')
+			tail = data[16:20]
+			#print('DEBUG: keep_alive2,packet 4 return\n',data.encode('hex'))
         
-        ran += random.randint(1,10)   
-        packet = keep_alive_package_builder(i+1,dump(ran),tail,3,False)
-        #print('DEBUG: keep_alive2,packet 5\n',packet.encode('hex'))
-        s.sendto(packet, (svr, 61440))
-        print('[keep_alive2] send',str(i+1),packet.encode('hex'))
-        data, address = s.recvfrom(1024)
-        print('[keep_alive2] recv',data.encode('hex'))
-        tail = data[16:20]
-        #print('DEBUG: keep_alive2,packet 5 return\n',data.encode('hex'))
-        i = (i+2) % 0xFF
-        time.sleep(20)
+			ran += random.randint(1,10)   
+			packet = keep_alive_package_builder(i+1,dump(ran),tail,3,False)
+			#print('DEBUG: keep_alive2,packet 5\n',packet.encode('hex'))
+			s.sendto(packet, (svr, 61440))
+			print('[keep_alive2] send',str(i+1),packet.encode('hex'))
+			data, address = s.recvfrom(1024)
+			print('[keep_alive2] recv',data.encode('hex'))
+			tail = data[16:20]
+			#print('DEBUG: keep_alive2,packet 5 return\n',data.encode('hex'))
+			i = (i+2) % 0xFF
+			time.sleep(20)
       except:
         pass
 
@@ -352,11 +372,29 @@ def empty_socket_buffer():
         pass
     print('emptyed')
 
-        
+
+def check_online():
+	try:
+		check_online = urllib2.urlopen('http://www.baidu.com')
+		foo=check_online.read()
+	except:
+		print "Network line Err,check the line...Hit the return"
+		raw_input()
+	else:
+		if '10.1.1.10' in foo:
+			print "Not Online,try to auth"
+			raw_input()
+		else:
+			print "Already online,Hit the return"
+			raw_input()
+		sys.exit(0)
+		
+
+		
 def main():
 	global server,username,password,host_name,host_os,dhcp_server,mac
-	print "Enter your auth sever ip:"
-	server = raw_input()# Auth server ip
+	print "Enter your auth sever ip:10.1.1.10"
+	server = "10.1.1.10" # Auth server ip
 	print "your username:"
 	username =raw_input()
 	print "your password:"
@@ -366,18 +404,27 @@ def main():
 	dhcp_server = "0.0.0.0"
 	#mac = 0xE0DB55BAE012 
 	#it is a mac in programme and it may crush with other users so I use randMAC to avoid it
+	loginpart()
+	
+def loginpart():
+	global package_tail
 	while True:
 		try:
 			package_tail = login(username, password, server)
 		except loginException:
 			continue
 		print('package_tail',package_tail.encode('hex'))
-		empty_socket_buffer()
-		#keep_alive1(SALT,package_tail,password,server)
-		#keep_alive1 looks like not work in my school
-		empty_socket_buffer()
-		keep_alive2(SALT,package_tail,password,server)
+		keeppart()
+		
+def keeppart():
+	#empty_socket_buffer()
+	keep_alive1(SALT,package_tail,password,server)
+	#empty_socket_buffer()
+	keep_alive2(SALT,package_tail,password,server)
+
+		
 if __name__ == "__main__":
+	try_socket()
 	version()
 	get_randmac()
 	get_mac()
