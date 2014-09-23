@@ -3,7 +3,7 @@
 #thx all authors before
 
 
-import socket, struct, time,sys,urllib2,random,re
+import socket, struct, time,sys,urllib2,random,re,os,uuid
 from hashlib import md5
 
 class ChallengeException (Exception):
@@ -22,10 +22,15 @@ def try_socket():
 		s.bind(("0.0.0.0", 61440))
 		s.settimeout(3)
 	except:
-		print "==============================="
+		print ".",
+		time.sleep(0.5)
+		print ".",
+		time.sleep(0.5)
+		print "."
+		time.sleep(0.5)
 		print "Cannot get port,close&reopen it"
-		print "==============================="
-		raw_input()
+		time.sleep(10)
+		os.system("cls")
 		sys.exit(0)
 	else:
 		SALT= ''
@@ -37,21 +42,20 @@ EXCEPTION = False
 def get_ip():
 	global hexip,host_ip
 	localip=socket.gethostbyname(socket.gethostname())
-	print "your local ip:"+localip
-	print "plz enter your local ip or use your own ip:."
-	a=raw_input()
+	print "Get ip..............[Ready]      "+localip
+	a=localip
 	hexip=socket.inet_aton(a)
 	host_ip=a
 
 def get_mac():
 	global mac
-
-	rmac=get_randmac()
-	print "randMAC:"+rmac
-	print "input your MAC like above or use your own mac:"
-	mac=long(raw_input(),16)
-	#print mac
-
+	rmac=uuid.UUID(int = uuid.getnode()).hex[-12:] 
+	#rmac=get_randmac()
+	#rmac=get_randmac()
+	#print "randMAC:"+rmac
+	#print "input your MAC like above or use your own mac:"
+	mac=long(rmac,16)
+	print "Get mac.............[Ready]      "+str(mac)
 	#mac=0xaabbccddeeff
 	
 def get_randmac():
@@ -63,7 +67,7 @@ def version():
 	print "=====================================================================" 
 	print "DrCOM Auth Router for 3.5+" 
 	print "powered by Ice and thx all authors before"
-	print "Version 0.3.6 with mac & ip en beta"
+	print "Version 0.3.7 with mac & ip en beta"
 	print "=====================================================================" 
 	
 
@@ -75,7 +79,7 @@ def challenge(svr,ran):
       s.sendto("\x01\x02"+t+"\x09"+"\x00"*15, (svr, 61440))
       try:
         data, address = s.recvfrom(1024)
-        print('[challenge] recv',data.encode('hex'))
+        #print('[challenge] recv',data.encode('hex'))
       except:
         print('[challenge] timeout, retrying...')
         continue
@@ -84,7 +88,7 @@ def challenge(svr,ran):
         break
       else:
         continue
-    print('[DEBUG] challenge:\n' + data.encode('hex'))
+    #print('[DEBUG] challenge:\n' + data.encode('hex'))
     if data[0] != '\x02':
       raise ChallengeException
     print('[challenge] challenge packet sent.')
@@ -145,37 +149,38 @@ def keep_alive2(*args):
     
     packet = keep_alive_package_builder(0,dump(ran),'\x00'*4,1,True)
     #packet = keep_alive_package_builder(0,dump(ran),dump(ran)+'\x22\x06',1,True)
-    print '[keep-alive2] send1',packet.encode('hex')
+    #print '[keep-alive2] send1',packet.encode('hex')
     while True:
         s.sendto(packet, (svr, 61440))
         data, address = s.recvfrom(1024)
         if data.startswith('\x07'):
             break
         else:
-            print '[keep-alive2] recv/unexpected',data.encode('hex')
-    print '[keep-alive2] recv1',data.encode('hex')
+		continue
+            #print '[keep-alive2] recv/unexpected',data.encode('hex')
+    #print '[keep-alive2] recv1',data.encode('hex')
     
     ran += random.randint(1,10)   
     packet = keep_alive_package_builder(1,dump(ran),'\x00'*4,1,False)
-    print '[keep-alive2] send2',packet.encode('hex')
+    #print '[keep-alive2] send2',packet.encode('hex')
     s.sendto(packet, (svr, 61440))
     while True:
         data, address = s.recvfrom(1024)
         if data[0] == '\x07':
             break
-    print '[keep-alive2] recv2',data.encode('hex')
+    #print '[keep-alive2] recv2',data.encode('hex')
     tail = data[16:20]
     
 
     ran += random.randint(1,10)   
     packet = keep_alive_package_builder(2,dump(ran),tail,3,False)
-    print '[keep-alive2] send3',packet.encode('hex')
+    #print '[keep-alive2] send3',packet.encode('hex')
     s.sendto(packet, (svr, 61440))
     while True:
         data, address = s.recvfrom(1024)
         if data[0] == '\x07':
             break
-    print '[keep-alive2] recv3',data.encode('hex')
+    #print '[keep-alive2] recv3',data.encode('hex')
     tail = data[16:20]
     print "[keep-alive2] keep-alive2 loop was in daemon."
     print "Start relogin countdown"
@@ -194,10 +199,10 @@ def keep_alive2(*args):
 			ran += random.randint(1,10)   
 			packet = keep_alive_package_builder(i,dump(ran),tail,1,False)
 			#print('DEBUG: keep_alive2,packet 4\n',packet.encode('hex'))
-			print '[keep_alive2] send',str(i),packet.encode('hex')
+			#print '[keep_alive2] send',str(i),packet.encode('hex')
 			s.sendto(packet, (svr, 61440))
 			data, address = s.recvfrom(1024)
-			print '[keep_alive2] recv',data.encode('hex')
+			#print '[keep_alive2] recv',data.encode('hex')
 			tail = data[16:20]
 			#print('DEBUG: keep_alive2,packet 4 return\n',data.encode('hex'))
         
@@ -205,9 +210,9 @@ def keep_alive2(*args):
 			packet = keep_alive_package_builder(i+1,dump(ran),tail,3,False)
 			#print('DEBUG: keep_alive2,packet 5\n',packet.encode('hex'))
 			s.sendto(packet, (svr, 61440))
-			print('[keep_alive2] send',str(i+1),packet.encode('hex'))
+			#print('[keep_alive2] send',str(i+1),packet.encode('hex'))
 			data, address = s.recvfrom(1024)
-			print('[keep_alive2] recv',data.encode('hex'))
+			#print('[keep_alive2] recv',data.encode('hex'))
 			tail = data[16:20]
 			#print('DEBUG: keep_alive2,packet 5 return\n',data.encode('hex'))
 			i = (i+2) % 0xFF
@@ -346,7 +351,7 @@ def keep_alive1(salt,tail,pwd,svr):
     data = '\xff' + md5sum('\x03\x01'+salt+pwd) + '\x00\x00\x00'
     data += tail
     data += foo + '\x00\x00\x00\x00'
-    print('[keep_alive1] send',data.encode('hex'))
+    #print('[keep_alive1] send',data.encode('hex'))
 
     s.sendto(data, (svr, 61440))
     while True:
@@ -355,7 +360,7 @@ def keep_alive1(salt,tail,pwd,svr):
             break
         else:
             print('[keep-alive1]recv/not expected',data.encode('hex'))
-    print('[keep-alive1] recv',data.encode('hex'))
+    #print('[keep-alive1] recv',data.encode('hex'))
 
 def empty_socket_buffer():
 #empty buffer
@@ -363,7 +368,7 @@ def empty_socket_buffer():
     try:
         while True:
             data, address = s.recvfrom(1024)
-            print 'recived sth unexcepted',data.encode('hex')
+            #print 'recived sth unexcepted',data.encode('hex')
             if s == '':
                 break
     except:
@@ -393,8 +398,8 @@ def check_online():
 		
 def main():
 	global server,username,password,host_name,host_os,dhcp_server,mac
-	print "Enter your auth sever ip:10.1.1.10"
-	server = "10.1.1.10" # Auth server ip
+	print "Get auth sever ip...[Ready]      "+"10.1.1.10"
+	server = '10.1.1.10' #raw_input() # Auth server ip
 	print "your username:"
 	username =raw_input()
 	print "your password:"
