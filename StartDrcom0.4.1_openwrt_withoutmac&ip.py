@@ -39,26 +39,6 @@ def try_socket():
 
 UNLIMITED_RETRY = True
 EXCEPTION = False
-
-
-def get_ip():
-	global hexip,host_ip
-	localip=socket.gethostbyname(socket.gethostname())
-	print "Get ip..............[Ready]      "+localip
-	a=localip
-	hexip=socket.inet_aton(a)
-	host_ip=a
-
-def get_mac():
-	global mac
-	rmac=uuid.UUID(int = uuid.getnode()).hex[-12:] 
-	#rmac=get_randmac()
-	#rmac=get_randmac()
-	#print "randMAC:"+rmac
-	#print "input your MAC like above or use your own mac:"
-	mac=long(rmac,16)
-	print "Get mac.............[Ready]      "+str(mac)
-	#mac=0xaabbccddeeff
 	
 def get_randmac():
 	mac = [ 0x00, 0x16, 0x3e,random.randint(0x00, 0x7f),random.randint(0x00, 0xff),random.randint(0x00, 0xff) ]
@@ -350,7 +330,7 @@ def check_online():
 
 		
 def main():
-	global server,username,password,host_name,host_os,dhcp_server,mac
+	global server,username,password,host_name,host_os,dhcp_server,mac,hexip,host_ip
 	execfile(CONF, globals())
 	'''
 	print "Get auth sever ip...           ",
@@ -360,6 +340,8 @@ def main():
 	print "your password:"
 	password = raw_input()
 	'''
+	hexip=socket.inet_aton(ip)
+	host_ip=ip
 	host_name = "est-pc"
 	host_os = "8089D"   #default is 8089D
 	dhcp_server = "0.0.0.0"
@@ -386,9 +368,6 @@ def keeppart():
 if __name__ == "__main__":
 	try_socket()
 	version()
-	get_randmac()
-	get_mac()
-	get_ip()
 	#get_conf()
 	main()
 
